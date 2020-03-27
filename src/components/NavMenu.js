@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {Menu} from 'semantic-ui-react';
 import {Link} from 'react-router-dom';
+import PropTypes from 'prop-types';
 
 export default function NavMenu(props) {
   const [activeItem, setActiveItem] = useState(null)
@@ -17,4 +18,12 @@ export default function NavMenu(props) {
       />)}
     </Menu>
   )
+}
+
+const ItemShape = PropTypes.shape({
+  content: PropTypes.string.isRequired,
+  to: PropTypes.string.isRequired
+})
+NavMenu.propTypes = {
+  items: PropTypes.arrayOf(ItemShape).isRequired
 }

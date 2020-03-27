@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import {Grid, Segment} from 'semantic-ui-react';
 import NavMenu from './NavMenu';
 import PageHeader from './PageHeader';
+import PropTypes from 'prop-types';
 
 export default function DefaultLayout(props) {
   return (
@@ -23,4 +24,11 @@ export default function DefaultLayout(props) {
       </Grid>
     </>
   )
+}
+
+DefaultLayout.propTypes = {
+  items: PropTypes.arrayOf(PropTypes.shape({
+    content: PropTypes.string.isRequired,
+    to: PropTypes.string.isRequired
+  })).isRequired
 }

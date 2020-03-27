@@ -1,6 +1,7 @@
 import React from 'react';
 import {Header, Item, Icon} from 'semantic-ui-react';
 import {Link} from 'react-router-dom';
+import PropTypes from 'prop-types';
 
 export default function PageHeader(props){
   return (
@@ -11,4 +12,8 @@ export default function PageHeader(props){
       </Header>
     </Item>
   )
+}
+
+PageHeader.propTypes = {
+  headerColor: PropTypes.string
 }
