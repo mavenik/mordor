@@ -1,0 +1,7 @@
+#define ssid "your-wifi-ssid"
+#define wifi_password "your-wifi-password"
+#define admin_user "your-admin-user"
+#define admin_password "your-admin-password"
+#define LOCAL_IP_ADDRESS const IPAddress local_ip(192,168,1,200)
+#define SUBNET_ADDRESS const IPAddress subnet(255,255,255,0)
+#define GATEWAY_ADDRESS const IPAddress gateway(192,168,1,1)

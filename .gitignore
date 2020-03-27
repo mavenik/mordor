@@ -1,0 +1,5 @@
+node_modules
+conf.h
+build
+*.swp
+*.swo

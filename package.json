@@ -1,0 +1,42 @@
+{
+  "name": "mordor",
+  "version": "1.0.0",
+  "main": "App.js",
+  "author": "Nikhil Lanjewar",
+  "license": "MIT",
+  "dependencies": {
+    "@babel/preset-env": "^7.9.0",
+    "@babel/preset-react": "^7.9.4",
+    "babel-loader": "^8.1.0",
+    "css-loader": "^3.4.2",
+    "html-webpack-plugin": "^4.0.1",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "react-router-dom": "^5.1.2",
+    "semantic-ui-react": "^0.88.2",
+    "style-loader": "^1.1.3",
+    "webpack": "^4.42.1",
+    "webpack-dev-server": "^3.10.3"
+  },
+  "babel": {
+    "presets": [
+      "@babel/env",
+      "@babel/react"
+    ]
+  },
+  "scripts": {
+    "build": "webpack && rm -rf data/web && mv -v build data/web",
+    "start": "webpack-dev-server --inline --hot",
+    "storybook": "start-storybook -p 6006",
+    "build-storybook": "build-storybook"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.9.0",
+    "@storybook/addon-actions": "^5.3.17",
+    "@storybook/addon-links": "^5.3.17",
+    "@storybook/addon-viewport": "^5.3.17",
+    "@storybook/addons": "^5.3.17",
+    "@storybook/react": "^5.3.17",
+    "webpack-cli": "^3.3.11"
+  }
+}
