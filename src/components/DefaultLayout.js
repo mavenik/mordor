@@ -4,7 +4,7 @@ import NavMenu from './NavMenu';
 import PageHeader from './PageHeader';
 import PropTypes from 'prop-types';
 
-export default function DefaultLayout(props) {
+export default function DefaultLayout({items, activeItem, children}) {
   return (
     <>
       <Grid>
@@ -15,10 +15,10 @@ export default function DefaultLayout(props) {
         </Grid.Row>
         <Grid.Row>
           <Grid.Column width={4}>
-            <NavMenu items={props.items}/>
+            <NavMenu items={items} activeItem={activeItem}/>
           </Grid.Column>
           <Grid.Column width={12}>
-            {props.children}
+            {children}
           </Grid.Column>
         </Grid.Row>
       </Grid>
@@ -30,5 +30,6 @@ DefaultLayout.propTypes = {
   items: PropTypes.arrayOf(PropTypes.shape({
     content: PropTypes.string.isRequired,
     to: PropTypes.string.isRequired
-  })).isRequired
+  })).isRequired,
+  activeItem: PropTypes.string
 }

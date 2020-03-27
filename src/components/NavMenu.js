@@ -4,7 +4,7 @@ import {Link} from 'react-router-dom';
 import PropTypes from 'prop-types';
 
 export default function NavMenu(props) {
-  const [activeItem, setActiveItem] = useState(null)
+  const [activeItem, setActiveItem] = useState(props.activeItem || null)
   const handleItemClick = (event, { name }) => setActiveItem(name)
 
   return (
@@ -25,5 +25,6 @@ const ItemShape = PropTypes.shape({
   to: PropTypes.string.isRequired
 })
 NavMenu.propTypes = {
-  items: PropTypes.arrayOf(ItemShape).isRequired
+  items: PropTypes.arrayOf(ItemShape).isRequired,
+  activeItem: PropTypes.string
 }

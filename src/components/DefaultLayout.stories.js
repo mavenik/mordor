@@ -6,4 +6,7 @@ import DefaultLayout from './DefaultLayout';
 
 storiesOf('DefaultLayout', module)
   .addDecorator((story) => <MemoryRouter>{story()}</MemoryRouter>)
-  .add('default', () => <DefaultLayout items={items}/>)
+  .add('default', () => <DefaultLayout items={items} activeItem="about">
+    Application content
+  </DefaultLayout>
+    )
