@@ -26,7 +26,7 @@
     ]
   },
   "scripts": {
-    "build": "webpack && rm -rf data/web && cp -rv build data/web",
+    "build": "webpack && rm -rf data && mkdir data && cp -rv build data/web",
     "start": "webpack-dev-server --inline --hot",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook"
