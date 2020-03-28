@@ -8,7 +8,7 @@ export default function DefaultLayout({items, activeItem, children}) {
   return (
     <>
       <Grid>
-        <Grid.Row centered color="black" textAlign="center" style={{marginTop: '0.7em'}}>
+        <Grid.Row centered color="black" textAlign="center" style={{marginTop: '1em'}}>
           <Grid.Column width={16}>
             <PageHeader headerColor="white"/>
           </Grid.Column>
