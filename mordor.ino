@@ -1,13 +1,7 @@
+#include <ArduinoJson.h>
 #include <WiFi.h>
-
 #include <ESPAsyncWebServer.h>
-
-/*
- *  This sketch demonstrates how to scan WiFi networks.
- *  The API is almost the same as with the WiFi Shield library,
- *  the most obvious difference being the different file you need to include:
- */
-#include "SPIFFS.h"
+#include <SPIFFS.h>
 #include "conf.h"
 
 LOCAL_IP_ADDRESS;
@@ -17,13 +11,41 @@ GATEWAY_ADDRESS;
 AsyncWebServer server(80);
 AsyncWebSocket ws("/socket");
 
-int os_printf(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
+void sendJsonSocketMessage(AsyncWebSocketClient * client, char* message_type, char* message){
+  JsonObject nullObject;
+  sendJsonSocketMessage(client, message_type, message, nullObject);
+  }
+void sendJsonSocketMessage(AsyncWebSocketClient * client, char* message_type, char* message, JsonObject dataObject)
+{
+  DynamicJsonDocument jsonDoc(1024);
+    JsonObject root = jsonDoc.to<JsonObject>();
+    root["type"] = message_type;
+    root["message"]= message;
+    if(dataObject)
+    {
+      root["data"] = dataObject;
+      }
+      
+    size_t jsonLength = measureJson(jsonDoc);
+    AsyncWebSocketMessageBuffer *messageBuffer = ws.makeBuffer(jsonLength);
+    if(messageBuffer)
+    {
+      serializeJson(root, (char*)messageBuffer->get(), jsonLength+1);
+      client->text(messageBuffer);
+      }
+  }
 
 void onWebSocketEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
   if(type == WS_EVT_CONNECT){
     //client connected
     ets_printf("ws[%s][%u] connect\n", server->url(), client->id());
-    client->printf("Hello Client %u :)", client->id());
+
+    String message = String("Hello client "+String(client->id()));
+    char messageBuffer[message.length()];
+    message.toCharArray(messageBuffer, message.length()+1);
+
+    sendJsonSocketMessage(client, "connect", messageBuffer);
+    
     client->ping();
   } else if(type == WS_EVT_DISCONNECT){
     //client disconnected
@@ -50,7 +72,7 @@ void onWebSocketEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, Aw
         ets_printf("\n");
       }
       if(info->opcode == WS_TEXT)
-        client->text("I got your text message");
+        sendJsonSocketMessage(client, "ack", (char*)data);
       else
         client->binary("I got your binary message");
     } else {

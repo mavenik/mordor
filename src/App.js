@@ -19,9 +19,9 @@ if (module.hot) {
 function App(){
   const socket = new W3CWebSocket("ws://192.168.1.200/socket");
   useEffect(() => {
-    socket.onopen = () => {console.log('Socket Connected!')}
+    socket.onopen = () => {console.log('Socket Connected!'); socket.send("Test");}
 
-    socket.onmessage = (message) => {console.log(message)}
+    socket.onmessage = (message) => {console.log(JSON.parse(message.data))}
   });
   return (
     <Router>
