@@ -1,7 +1,9 @@
 #include <ArduinoJson.h>
+#include<AsyncJson.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <SPIFFS.h>
+#include <string.h>
 #include "conf.h"
 
 LOCAL_IP_ADDRESS;
@@ -10,6 +12,73 @@ GATEWAY_ADDRESS;
 
 AsyncWebServer server(80);
 AsyncWebSocket ws("/socket");
+DynamicJsonDocument statusJsonDocument(1024);
+const char statusFilePath[] = "/status.json";
+
+/**
+ * Loads current status of the board and appliances from a status.json file
+ */
+void loadStatus()
+{
+  if(SPIFFS.exists(statusFilePath))
+  {
+    File file = SPIFFS.open(statusFilePath, "r");
+    if(!file)
+    {
+      Serial.println("Could not open status file to load current status");
+      return;
+      } // if
+      else
+      {
+        DeserializationError error = deserializeJson(statusJsonDocument, file);
+        if(error)
+        {
+          Serial.println("Failed to read json data from status file");
+          return;
+          }
+        } // else (!file)
+    }
+  }
+
+/**
+ * Saves current status JSON document to file
+ */
+void saveStatus()
+{
+  // Move file to a temporary path
+  char *temporaryPath = strdup(statusFilePath);
+  strcat(temporaryPath, ".tmp");
+  ets_printf("Temporary file path is %s\n", temporaryPath);
+  if(!SPIFFS.rename(statusFilePath, temporaryPath))
+  {
+    Serial.println("Unable to backup current status file. Aborting save operation!");
+    return;
+    }
+    else
+    {
+      File file = SPIFFS.open(statusFilePath, "w");
+      if(!file)
+      {
+        ets_printf("Unable to create new status file at %s. Backup can be found at %s.\n", statusFilePath, temporaryPath);
+        return;
+        }
+        else
+        {
+          if(serializeJson(statusJsonDocument, file) == 0)
+          {
+            file.close();
+            SPIFFS.remove(statusFilePath);
+            ets_printf("Unable to write JSON data to file. Current status stays in memory. Backup file can be found at %s.\n", temporaryPath);
+            }
+            else
+            {
+              file.close();
+              SPIFFS.remove(temporaryPath);
+              ets_printf("Saved current status to file\n");
+              }
+          } // else (!file)
+      } // else (!SPIFFS.rename)
+  } 
 
 void sendJsonSocketMessage(AsyncWebSocketClient * client, char* message_type, char* message){
   JsonObject nullObject;
@@ -72,7 +141,7 @@ void onWebSocketEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, Aw
         ets_printf("\n");
       }
       if(info->opcode == WS_TEXT)
-        sendJsonSocketMessage(client, "ack", (char*)data);
+        sendJsonSocketMessage(client, "echo", (char*)data);
       else
         client->binary("I got your binary message");
     } else {
@@ -151,7 +220,29 @@ void setup()
 
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "http://localhost:8080");
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
+
+    // Load current status
+    loadStatus();
+    saveStatus();
     
+    server.on("/api/status.json", HTTP_GET, [](AsyncWebServerRequest *request){
+      if(statusJsonDocument.isNull())
+      {
+        AsyncWebServerResponse *response = request->beginResponse(404, "text/html", "Cannot find current status!");
+        response->addHeader("Server", "ESP Async Web API");
+        request->send(response);
+        }
+        else
+        {
+          AsyncJsonResponse * response = new AsyncJsonResponse();
+          response->addHeader("Server", "ESP Async Web API");
+          JsonObject root = response->getRoot();
+          root["status"] = statusJsonDocument.to<JsonObject>();
+          response->setLength();
+          request->send(response);
+          }
+      });
+      
     server.serveStatic("/", SPIFFS, "/web/")
     .setDefaultFile("index.html")
     .setAuthentication(admin_user, admin_password);

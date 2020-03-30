@@ -3,4 +3,4 @@ conf.h
 build
 *.swp
 *.swo
-data/web/**/*
+data/**/*
