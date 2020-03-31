@@ -6,6 +6,9 @@
 #include <string.h>
 #include "conf.h"
 
+#define WS_ACCEPTED 202
+#define WS_OK 200
+
 LOCAL_IP_ADDRESS;
 SUBNET_ADDRESS;
 GATEWAY_ADDRESS;
@@ -85,19 +88,20 @@ void saveStatus()
  */
 void onJsonMessage(AsyncWebSocketClient * client, const JsonDocument& jsonMessageDocument)
 {
-  sendJsonSocketMessage(client, "success", "", jsonMessageDocument);
+  sendJsonSocketMessage(client, "success", "", WS_OK, jsonMessageDocument);
 }
 
-void sendJsonSocketMessage(AsyncWebSocketClient * client, char* message_type, char* message){
+void sendJsonSocketMessage(AsyncWebSocketClient * client, char* message_type, int code, char* message){
   StaticJsonDocument<200> nullObject;
-  sendJsonSocketMessage(client, message_type, message, nullObject);
+  sendJsonSocketMessage(client, message_type, message, code, nullObject);
   }
-void sendJsonSocketMessage(AsyncWebSocketClient * client, char* message_type, char* message, const JsonDocument& dataObject)
+void sendJsonSocketMessage(AsyncWebSocketClient * client, char* message_type, char* message, int code, const JsonDocument& dataObject)
 {
   DynamicJsonDocument jsonDoc(1024);
     JsonObject root = jsonDoc.to<JsonObject>();
     root["type"] = message_type;
     root["message"]= message;
+    root["code"] = code;
     if(!dataObject.isNull())
     {
       root["data"] = dataObject;
@@ -121,7 +125,7 @@ void onWebSocketEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, Aw
     char messageBuffer[message.length()];
     message.toCharArray(messageBuffer, message.length()+1);
 
-    sendJsonSocketMessage(client, "connect", messageBuffer);
+    sendJsonSocketMessage(client, "connect", WS_ACCEPTED, messageBuffer);
     
     client->ping();
   } else if(type == WS_EVT_DISCONNECT){
@@ -156,7 +160,7 @@ void onWebSocketEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, Aw
         if(deserializationError) // Not a valid JSON object
         {
           // Echo incoming message
-          sendJsonSocketMessage(client, "echo", (char*)data);
+          sendJsonSocketMessage(client, "echo", WS_OK, (char*)data);
         }
         else // serializeJson
         {
