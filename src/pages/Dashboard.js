@@ -5,8 +5,10 @@ import {
   Dimmer,
   Loader,
   Segment,
-  Image
+  Image,
+  Button
 } from 'semantic-ui-react';
+import AddSpaceForm from '../components/AddSpaceForm';
 import API from '../api';
 
 export default function Dashboard() {
@@ -19,13 +21,11 @@ export default function Dashboard() {
     setError(null);
     API.get('/status.json')
       .then(response => {
-        console.log(response);
         setSpaceConfig(response.data.status);
         setLoading(false);
       })
       .catch(error => {
-        console.error(error.response);
-        setError(error.response);
+        setError(error);
         setLoading(false);
       });
   }
@@ -39,7 +39,7 @@ export default function Dashboard() {
     errorMessage = (
         <Message negative>
           <Message.Header>Could not get space configuration</Message.Header>
-          <p>API response was {error.status}: {error.data}</p>
+          <p>Server response was {error.response? error.response.status : ''}: {error.response? error.response.data : error.message}</p>
         </Message>
     )
     }
@@ -64,10 +64,13 @@ export default function Dashboard() {
         || !spaceConfig.spaces || spaceConfig.spaces.length == 0)
       {
         pageContent = (
+          <>
           <Message>
             <Message.Header>No spaces found</Message.Header>
             <p>Add spaces to manage your home</p>
           </Message>
+            <AddSpaceForm />
+          </>
         )
       }
       else
