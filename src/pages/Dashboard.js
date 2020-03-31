@@ -1,10 +1,85 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import Page from './Page';
+import {
+  Message,
+  Dimmer,
+  Loader,
+  Segment,
+  Image
+} from 'semantic-ui-react';
+import API from '../api';
 
 export default function Dashboard() {
-  return (
-    <Page activeItem='dashboard'>
-      Dashboard
-    </Page>
-  )
-}
+  const [spaceConfig, setSpaceConfig] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  async function getSpaceConfig() {
+    setLoading(true);
+    setError(null);
+    API.get('/status.json')
+      .then(response => {
+        console.log(response);
+        setSpaceConfig(response.data.status);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error(error.response);
+        setError(error.response);
+        setLoading(false);
+      });
+  }
+  useEffect(()=>{
+    getSpaceConfig();
+  }, []);
+
+  var errorMessage;
+  if(error)
+  {
+    errorMessage = (
+        <Message negative>
+          <Message.Header>Could not get space configuration</Message.Header>
+          <p>API response was {error.status}: {error.data}</p>
+        </Message>
+    )
+    }
+
+    var pageContent;
+    if(loading)
+    {
+      pageContent = (
+        <Segment>
+          <Dimmer active inverted>
+            <Loader size="medium">Loading space configuration</Loader>
+          </Dimmer>
+          <Image src="https://react.semantic-ui.com/images/wireframe/paragraph.png"/>
+        </Segment>
+      )
+    }
+    else
+    {
+      // Check if spaces have not been initialized yet
+      if(
+        Object.keys(spaceConfig).length == 0 
+        || !spaceConfig.spaces || spaceConfig.spaces.length == 0)
+      {
+        pageContent = (
+          <Message>
+            <Message.Header>No spaces found</Message.Header>
+            <p>Add spaces to manage your home</p>
+          </Message>
+        )
+      }
+      else
+      {
+        pageContent = JSON.stringify(spaceConfig);
+      }
+    }
+
+    return (
+      <Page activeItem='dashboard'>
+        {errorMessage}
+        {pageContent}
+      </Page>
+    )
+  }

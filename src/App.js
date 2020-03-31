@@ -22,7 +22,7 @@ function App(){
     socket.onopen = () => {console.log('Socket Connected!'); socket.send("Test");}
 
     socket.onmessage = (message) => {console.log(JSON.parse(message.data))}
-  });
+  }, []);
   return (
     <Router>
       <Switch>

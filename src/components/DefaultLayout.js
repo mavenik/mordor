@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Grid, Segment} from 'semantic-ui-react';
+import {Grid, Segment, Container} from 'semantic-ui-react';
 import NavMenu from './NavMenu';
 import PageHeader from './PageHeader';
 import PropTypes from 'prop-types';
@@ -13,6 +13,9 @@ export default function DefaultLayout({items, activeItem, children}) {
             <PageHeader headerColor="white"/>
           </Grid.Column>
         </Grid.Row>
+      </Grid>
+      <Container style={{marginTop: '0.5em'}}>
+            <Grid>
         <Grid.Row>
           <Grid.Column width={4}>
             <NavMenu items={items} activeItem={activeItem}/>
@@ -22,6 +25,7 @@ export default function DefaultLayout({items, activeItem, children}) {
           </Grid.Column>
         </Grid.Row>
       </Grid>
+          </Container>
     </>
   )
 }
