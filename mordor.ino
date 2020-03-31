@@ -5,9 +5,7 @@
 #include <SPIFFS.h>
 #include <string.h>
 #include "conf.h"
-
-#define WS_ACCEPTED 202
-#define WS_OK 200
+#include "WebSocketResponseCodes.h"
 
 LOCAL_IP_ADDRESS;
 SUBNET_ADDRESS;
