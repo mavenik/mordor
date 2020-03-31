@@ -80,17 +80,25 @@ void saveStatus()
       } // else (!SPIFFS.rename)
   } 
 
+/**
+ * Processes an incoming JSON WebSocket message from client
+ */
+void onJsonMessage(AsyncWebSocketClient * client, const JsonDocument& jsonMessageDocument)
+{
+  sendJsonSocketMessage(client, "success", "", jsonMessageDocument);
+}
+
 void sendJsonSocketMessage(AsyncWebSocketClient * client, char* message_type, char* message){
-  JsonObject nullObject;
+  StaticJsonDocument<200> nullObject;
   sendJsonSocketMessage(client, message_type, message, nullObject);
   }
-void sendJsonSocketMessage(AsyncWebSocketClient * client, char* message_type, char* message, JsonObject dataObject)
+void sendJsonSocketMessage(AsyncWebSocketClient * client, char* message_type, char* message, const JsonDocument& dataObject)
 {
   DynamicJsonDocument jsonDoc(1024);
     JsonObject root = jsonDoc.to<JsonObject>();
     root["type"] = message_type;
     root["message"]= message;
-    if(dataObject)
+    if(!dataObject.isNull())
     {
       root["data"] = dataObject;
       }
@@ -141,7 +149,21 @@ void onWebSocketEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, Aw
         ets_printf("\n");
       }
       if(info->opcode == WS_TEXT)
-        sendJsonSocketMessage(client, "echo", (char*)data);
+      {
+        StaticJsonDocument<1024> jsonMessageDocument;
+        // Check if incoming message from client is JSON data or not
+        DeserializationError deserializationError = deserializeJson(jsonMessageDocument, (char*)data);
+        if(deserializationError) // Not a valid JSON object
+        {
+          // Echo incoming message
+          sendJsonSocketMessage(client, "echo", (char*)data);
+        }
+        else // serializeJson
+        {
+          // Process JSON message
+          onJsonMessage(client, jsonMessageDocument);
+          }
+      }
       else
         client->binary("I got your binary message");
     } else {
