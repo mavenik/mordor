@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useReducer, createContext} from 'react';
 import Page from './Page';
 import {
   Message,
@@ -10,18 +10,23 @@ import {
 } from 'semantic-ui-react';
 import AddSpaceForm from '../components/AddSpaceForm';
 import API from '../api';
+import {SpaceContext} from '../context/SpaceContext';
 
 export default function Dashboard() {
-  const [spaceConfig, setSpaceConfig] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const spaceAdder = (spaceConfig, newSpace) => {
+    return {...spaceConfig, ...newSpace};
+  }
+  const [spaceConfig, addSpace] = useReducer(spaceAdder,{});
 
   async function getSpaceConfig() {
     setLoading(true);
     setError(null);
     API.get('/status.json')
       .then(response => {
-        setSpaceConfig(response.data.status);
+        addSpace(response.data.status);
         setLoading(false);
       })
       .catch(error => {
@@ -60,8 +65,7 @@ export default function Dashboard() {
     {
       // Check if spaces have not been initialized yet
       if(
-        Object.keys(spaceConfig).length == 0 
-        || !spaceConfig.spaces || spaceConfig.spaces.length == 0)
+        Object.keys(spaceConfig).length == 0)
       {
         pageContent = (
           <>
@@ -69,14 +73,23 @@ export default function Dashboard() {
             <Message.Header>No spaces found</Message.Header>
             <p>Add spaces to manage your home</p>
           </Message>
-            <AddSpaceForm />
           </>
         )
       }
       else
       {
-        pageContent = JSON.stringify(spaceConfig);
+        pageContent = <>
+          <p>{JSON.stringify(spaceConfig)}</p>
+        </>
       }
+      pageContent = (
+        <>
+          {pageContent}
+          <SpaceContext.Provider value={{addSpace}}>
+            <AddSpaceForm />
+            </SpaceContext.Provider>
+        </>
+      )
     }
 
     return (
