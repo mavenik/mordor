@@ -32,10 +32,6 @@ export default function AddSpaceForm(){
     setFormVisible(false);
   }
 
-  const handleDropdown = (data) => {
-    console.log(data);
-  }
-
   const dropdownOptions = [
     {icon: "food", content: "Kitchen"},
     {icon: "tree", content: "Garden"},
