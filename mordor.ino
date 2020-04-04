@@ -6,35 +6,40 @@
 #include <string.h>
 #include "conf.h"
 #include "WebSocketResponseCodes.h"
+#include "uuid.h"
 
-LOCAL_IP_ADDRESS;
-SUBNET_ADDRESS;
-GATEWAY_ADDRESS;
+const int * localIPAddress = getIPArray(LOCAL_IP_ADDRESS);
+const int * subnetAddress = getIPArray(SUBNET_ADDRESS);
+const int * gatewayAddress = getIPArray(GATEWAY_ADDRESS);
+
+const IPAddress local_ip(localIPAddress[0],localIPAddress[1],localIPAddress[2],localIPAddress[3]);
+const IPAddress subnet(subnetAddress[0],subnetAddress[1],subnetAddress[2],subnetAddress[3]);
+const IPAddress gateway(gatewayAddress[0],gatewayAddress[1],gatewayAddress[2],gatewayAddress[3]);
 
 AsyncWebServer server(80);
 AsyncWebSocket ws("/socket");
-DynamicJsonDocument statusJsonDocument(1024);
-const char statusFilePath[] = "/status.json";
+DynamicJsonDocument spacesJsonDocument(1024);
+const char spacesFilePath[] = "/spaces.json";
 
 /**
- * Loads current status of the board and appliances from a status.json file
+ * Loads current list of spaces of the board and appliances from a JSON file
  */
-void loadStatus()
+void loadSpaces()
 {
-  if(SPIFFS.exists(statusFilePath))
+  if(SPIFFS.exists(spacesFilePath))
   {
-    File file = SPIFFS.open(statusFilePath, "r");
+    File file = SPIFFS.open(spacesFilePath, "r");
     if(!file)
     {
-      Serial.println("Could not open status file to load current status");
+      Serial.println("Could not open spaces file to load current status");
       return;
       } // if
       else
       {
-        DeserializationError error = deserializeJson(statusJsonDocument, file);
+        DeserializationError error = deserializeJson(spacesJsonDocument, file);
         if(error)
         {
-          Serial.println("Failed to read json data from status file");
+          Serial.println("Failed to read json data from spaces file");
           return;
           }
         } // else (!file)
@@ -42,44 +47,55 @@ void loadStatus()
   }
 
 /**
- * Saves current status JSON document to file
+ * Saves current spaces JSON document to file
  */
-void saveStatus()
+void saveSpaces()
 {
   // Move file to a temporary path
-  char *temporaryPath = strdup(statusFilePath);
+  char *temporaryPath = strdup(spacesFilePath);
   strcat(temporaryPath, ".tmp");
   ets_printf("Temporary file path is %s\n", temporaryPath);
-  if(!SPIFFS.rename(statusFilePath, temporaryPath))
+  if(!SPIFFS.rename(spacesFilePath, temporaryPath))
   {
-    Serial.println("Unable to backup current status file. Aborting save operation!");
+    Serial.println("Unable to backup current spaces file. Aborting save operation!");
     return;
     }
     else
     {
-      File file = SPIFFS.open(statusFilePath, "w");
+      File file = SPIFFS.open(spacesFilePath, "w");
       if(!file)
       {
-        ets_printf("Unable to create new status file at %s. Backup can be found at %s.\n", statusFilePath, temporaryPath);
+        ets_printf("Unable to create new status file at %s. Backup can be found at %s.\n", spacesFilePath, temporaryPath);
         return;
         }
         else
         {
-          if(serializeJson(statusJsonDocument, file) == 0)
+          if(serializeJson(spacesJsonDocument, file) == 0)
           {
             file.close();
-            SPIFFS.remove(statusFilePath);
-            ets_printf("Unable to write JSON data to file. Current status stays in memory. Backup file can be found at %s.\n", temporaryPath);
+            SPIFFS.remove(spacesFilePath);
+            ets_printf("Unable to write JSON data to file. Current spaces stay in memory. Backup file can be found at %s.\n", temporaryPath);
             }
             else
             {
               file.close();
               SPIFFS.remove(temporaryPath);
-              ets_printf("Saved current status to file\n");
+              ets_printf("Saved current list of spaces to file\n");
               }
           } // else (!file)
       } // else (!SPIFFS.rename)
   } 
+
+AsyncCallbackJsonWebHandler* createSpace = new AsyncCallbackJsonWebHandler("/api/spaces.json", [](AsyncWebServerRequest *request, JsonVariant &json) {
+  JsonObject space = json.as<JsonObject>();
+  AsyncJsonResponse * response = new AsyncJsonResponse();
+          response->addHeader("Server", "ESP Async Web API");
+          JsonObject root = response->getRoot();
+          root[uuidv4()] = space;
+          root["method"]=request->methodToString();
+          response->setLength();
+          request->send(response);
+});
 
 /**
  * Processes an incoming JSON WebSocket message from client
@@ -246,13 +262,13 @@ void setup()
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
 
     // Load current status
-    loadStatus();
-    saveStatus();
+    loadSpaces();
+    saveSpaces();
     
-    server.on("/api/status.json", HTTP_GET, [](AsyncWebServerRequest *request){
-      if(statusJsonDocument.isNull())
+    server.on("/api/spaces.json", HTTP_GET, [](AsyncWebServerRequest *request){
+      if(spacesJsonDocument.isNull())
       {
-        AsyncWebServerResponse *response = request->beginResponse(404, "text/html", "Cannot find current status!");
+        AsyncWebServerResponse *response = request->beginResponse(404, "text/html", "Cannot find current list of spaces!");
         response->addHeader("Server", "ESP Async Web API");
         request->send(response);
         }
@@ -261,12 +277,13 @@ void setup()
           AsyncJsonResponse * response = new AsyncJsonResponse();
           response->addHeader("Server", "ESP Async Web API");
           JsonObject root = response->getRoot();
-          root["status"] = statusJsonDocument.to<JsonObject>();
+          root["spaces"] = spacesJsonDocument.to<JsonObject>();
           response->setLength();
           request->send(response);
           }
       });
-      
+
+    server.addHandler(createSpace);
     server.serveStatic("/", SPIFFS, "/web/")
     .setDefaultFile("index.html")
     .setAuthentication(admin_user, admin_password);
