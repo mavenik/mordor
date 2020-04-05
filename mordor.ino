@@ -21,6 +21,8 @@ AsyncWebSocket ws("/socket");
 DynamicJsonDocument spacesJsonDocument(1024);
 const char spacesFilePath[] = "/spaces.json";
 
+enum DataType{STRING, INT};
+
 /**
  * Loads current list of spaces of the board and appliances from a JSON file
  */
@@ -86,13 +88,72 @@ void saveSpaces()
       } // else (!SPIFFS.rename)
   } 
 
+void validate(JsonObject &json, char * fieldName, DataType fieldType, char *error)
+{
+  ets_printf("Validating %s\n", fieldName);
+  switch(fieldType)
+  {
+    case STRING:
+      ets_printf("Checking STRING\n");
+      if(json.containsKey(fieldName))
+      {
+        ets_printf("JSON contains %s\n", fieldName);
+        if(strlen(json[fieldName]) == 0)
+        {
+          ets_printf("%s was blank\n", fieldName);
+          sprintf(error, "'%s' was blank", fieldName);
+          }
+        }
+        else
+        {
+          ets_printf("%s was missing\n", fieldName);
+          sprintf(error, "'%s' was missing", fieldName);
+          }
+          break;
+     default:
+     break;
+    }
+  }
+
 AsyncCallbackJsonWebHandler* createSpace = new AsyncCallbackJsonWebHandler("/api/spaces.json", [](AsyncWebServerRequest *request, JsonVariant &json) {
-  JsonObject space = json.as<JsonObject>();
   AsyncJsonResponse * response = new AsyncJsonResponse();
-          response->addHeader("Server", "ESP Async Web API");
-          JsonObject root = response->getRoot();
+  response->addHeader("Server", "ESP Async Web API");
+  JsonObject root = response->getRoot();
+  JsonObject jsonRequest = json.as<JsonObject>();
+
+  if(jsonRequest.isNull() || jsonRequest.size() == 0)
+  {
+    root["error"] = "Invalid request";
+    response->setCode(400);
+  }
+  else
+  {
+    JsonObject space = jsonRequest["space"];
+  // Return with an error if space JSON was empty or null
+  if(space.isNull() || space.size() == 0)
+  {
+    root["error"] = "'space' was absent in JSON request";
+    response->setCode(400); // Bad Request 
+    }
+    else
+    {
+      // Validate presence and non-emptiness of fields
+      char error[1000];
+      validate(space, "name", STRING, error);
+      validate(space, "icon", STRING, error);
+
+      if(error[0])
+      {
+        root["error"] = error;
+        response->setCode(400);
+        }
+        else
+        {
           root[uuidv4()] = space;
-          root["method"]=request->methodToString();
+          response->setCode(200);
+          }
+      }
+  }        
           response->setLength();
           request->send(response);
 });
